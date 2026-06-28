@@ -1,0 +1,25 @@
+{
+  "name": "com.wasimdevelopment.unity-mcp-bridge",
+  "version": "0.5.1",
+  "displayName": "Wasim Unity MCP Bridge",
+  "description": "A Unity 2022.3 LTS MCP bridge whose standalone PowerShell companion owns MCP and ngrok across Unity domain reloads, with bounded read-only analysis of scripts, folders, prefabs, scenes and Animator Controllers.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Wasim Development"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "keywords": [
+    "mcp",
+    "chatgpt",
+    "assistant",
+    "editor",
+    "debugging",
+    "ngrok",
+    "prefab",
+    "animator",
+    "code-review",
+    "folder-analysis"
+  ]
+}
