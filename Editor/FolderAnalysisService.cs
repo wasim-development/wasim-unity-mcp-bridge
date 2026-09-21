@@ -59,9 +59,10 @@ namespace WasimDevelopment.UnityMcpBridge
                 throw new InvalidOperationException("The selected Project item is not a folder.");
 
             if (!string.Equals(folderPath, "Assets", StringComparison.OrdinalIgnoreCase)
-                && !folderPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
+                && !folderPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
+                && !(BridgePreferences.AllowPackageScripts && folderPath.StartsWith("Packages/", StringComparison.Ordinal)))
             {
-                throw new InvalidOperationException("Selected-folder analysis is limited to the Assets folder in this release.");
+                throw new InvalidOperationException("Select an Assets folder, or enable package reading for a registered Packages folder.");
             }
 
             List<string> discoveredPaths = FindAssetPaths(folderPath, includeSubfolders);
@@ -241,7 +242,7 @@ namespace WasimDevelopment.UnityMcpBridge
             ref int totalIssueCount,
             Dictionary<string, List<string>> typeDeclarationPaths)
         {
-            string fullPath = Path.Combine(ProjectSecurity.ProjectRoot, path.Replace('/', Path.DirectorySeparatorChar));
+            string fullPath = ProjectSecurity.ResolveAssetFile(path);
             try
             {
                 FileInfo info = new FileInfo(fullPath);
@@ -919,7 +920,7 @@ namespace WasimDevelopment.UnityMcpBridge
         {
             try
             {
-                string fullPath = Path.Combine(ProjectSecurity.ProjectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar));
+                string fullPath = ProjectSecurity.ResolveAssetFile(assetPath);
                 return File.Exists(fullPath) ? new FileInfo(fullPath).Length : 0L;
             }
             catch

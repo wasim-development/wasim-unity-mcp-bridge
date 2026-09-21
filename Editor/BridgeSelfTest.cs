@@ -37,7 +37,7 @@ namespace WasimDevelopment.UnityMcpBridge
             {
                 if (_state == BridgeSelfTestState.Running) return;
                 _state = BridgeSelfTestState.Running;
-                _lastResult = "Testing companion initialize and tools/list…";
+                _lastResult = "Testing companion protocol and a Unity IPC round trip…";
             }
             RaiseChanged();
 
@@ -70,7 +70,17 @@ namespace WasimDevelopment.UnityMcpBridge
                     });
                     int toolCount = tools["result"]?["tools"] is JArray array ? array.Count : 0;
                     if (toolCount == 0) throw new InvalidDataException("The companion tool catalogue was empty.");
-                    SetResult(BridgeSelfTestState.Passed, "Companion MCP test passed. Protocol " + protocol + ", " + toolCount + " tools available.");
+                    JObject call = Post(endpoint, new JObject
+                    {
+                        ["jsonrpc"] = "2.0", ["id"] = 3, ["method"] = "tools/call",
+                        ["params"] = new JObject { ["name"] = "unity_get_status", ["arguments"] = new JObject() }
+                    });
+                    if (call["result"]?["isError"]?.Value<bool>() != false)
+                        throw new InvalidDataException("Unity IPC round trip failed: " + call.ToString(Newtonsoft.Json.Formatting.None));
+                    string statusText = call["result"]?["content"]?[0]?["text"]?.Value<string>();
+                    JObject status = JObject.Parse(statusText ?? "{}");
+                    if (status["bridgeVersion"] == null) throw new InvalidDataException("Unity status response has no bridge version.");
+                    SetResult(BridgeSelfTestState.Passed, "MCP and Unity IPC test passed. Protocol " + protocol + ", " + toolCount + " tools available.");
                 }
                 catch (Exception ex)
                 {

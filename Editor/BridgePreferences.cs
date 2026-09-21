@@ -72,6 +72,17 @@ namespace WasimDevelopment.UnityMcpBridge
             set => EditorPrefs.SetBool(Prefix + "EnableScriptChangeProposals", value);
         }
 
+        public static bool EnableChangeSets
+        {
+            get => EditorPrefs.GetBool(Prefix + "EnableChangeSets", false);
+            set => EditorPrefs.SetBool(Prefix + "EnableChangeSets", value);
+        }
+        public static bool EnableEditorActions
+        {
+            get => EditorPrefs.GetBool(Prefix + "EnableEditorActions", false);
+            set => EditorPrefs.SetBool(Prefix + "EnableEditorActions", value);
+        }
+
         public static bool RevealPrivateEndpoint
         {
             get => EditorPrefs.GetBool(Prefix + "RevealEndpoint", false);

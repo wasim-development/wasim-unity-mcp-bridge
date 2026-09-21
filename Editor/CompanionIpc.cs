@@ -17,6 +17,9 @@ namespace WasimDevelopment.UnityMcpBridge
         private const int MaximumRequestsPerUpdate = 3;
         private static double _nextHeartbeatTime;
         private static bool _initialized;
+        private static double _nextFailureLog;
+        public static DateTime LastHeartbeatUtc { get; private set; }
+        public static string LastHeartbeatError { get; private set; } = string.Empty;
 
         public static string RootPath => Path.Combine(ProjectSecurity.ProjectRoot, "Library", "WasimUnityMcpBridge", "Companion");
         public static string RequestsPath => Path.Combine(RootPath, "Requests");
@@ -37,18 +40,21 @@ namespace WasimDevelopment.UnityMcpBridge
 
         public static void Initialize()
         {
-            EnsureDirectories();
-            RecoverInterruptedRequests();
-            WriteCatalog();
-            WriteConfig();
-            WriteUnityStatus("ready");
-
             if (_initialized) return;
             _initialized = true;
             EditorApplication.update -= Update;
             EditorApplication.update += Update;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
+            try
+            {
+                EnsureDirectories();
+                RecoverInterruptedRequests();
+                WriteCatalog();
+                WriteConfig();
+            }
+            catch (Exception ex) { ReportIpcError(ex); }
+            TryWriteHeartbeat("ready");
         }
 
         public static void WriteConfig()
@@ -101,18 +107,28 @@ namespace WasimDevelopment.UnityMcpBridge
                 ["timestampUtc"] = DateTime.UtcNow.ToString("O")
             };
             AtomicWrite(UnityStatusPath, status.ToString(Formatting.None));
+            LastHeartbeatUtc = DateTime.UtcNow;
+            LastHeartbeatError = string.Empty;
         }
 
         public static bool IsHeartbeatFresh(double maximumAgeSeconds = 4d)
         {
-            try
-            {
-                if (!File.Exists(UnityStatusPath)) return false;
-                JObject status = JObject.Parse(File.ReadAllText(UnityStatusPath));
-                if (!DateTime.TryParse(status["timestampUtc"]?.Value<string>(), out DateTime time)) return false;
-                return (DateTime.UtcNow - time.ToUniversalTime()).TotalSeconds <= maximumAgeSeconds;
-            }
-            catch { return false; }
+            double age = (DateTime.UtcNow - LastHeartbeatUtc).TotalSeconds;
+            return LastHeartbeatUtc != default(DateTime) && age >= 0 && age <= maximumAgeSeconds;
+        }
+
+        public static void TryWriteHeartbeat(string state)
+        {
+            try { WriteUnityStatus(state); WriteCatalogIfMissing(); }
+            catch (Exception ex) { ReportIpcError(ex); }
+        }
+
+        private static void ReportIpcError(Exception ex)
+        {
+            LastHeartbeatError = ex.GetBaseException().Message;
+            if (EditorApplication.timeSinceStartup < _nextFailureLog) return;
+            _nextFailureLog = EditorApplication.timeSinceStartup + 30;
+            UnityEngine.Debug.LogWarning("[Wasim MCP] IPC write failed; retrying: " + LastHeartbeatError);
         }
 
         public static void SignalStop()
@@ -131,15 +147,14 @@ namespace WasimDevelopment.UnityMcpBridge
             if (EditorApplication.timeSinceStartup >= _nextHeartbeatTime)
             {
                 _nextHeartbeatTime = EditorApplication.timeSinceStartup + HeartbeatIntervalSeconds;
-                WriteUnityStatus(EditorApplication.isCompiling ? "compiling" : "ready");
-                WriteCatalogIfMissing();
+                TryWriteHeartbeat(EditorApplication.isCompiling ? "compiling" : "ready");
             }
             ProcessPendingRequests();
         }
 
         private static void BeforeAssemblyReload()
         {
-            WriteUnityStatus("reloading");
+            TryWriteHeartbeat("reloading");
         }
 
         private static void ProcessPendingRequests()
@@ -172,8 +187,12 @@ namespace WasimDevelopment.UnityMcpBridge
             string requestId = Path.GetFileNameWithoutExtension(fileName);
             try
             {
-                JObject request = JObject.Parse(File.ReadAllText(processingPath));
-                requestId = request["id"]?.Value<string>() ?? requestId;
+                JObject request = AtomicFile.ReadObject(processingPath);
+                if (!Guid.TryParseExact(requestId, "N", out _) || request["id"]?.Value<string>() != requestId)
+                    throw new InvalidOperationException("Invalid IPC request ID.");
+                if (AtomicFile.TryUtc(request["expiresUtc"]?.Value<string>(), out DateTime expiry)
+                    && DateTime.UtcNow > expiry) throw new TimeoutException("Request expired before execution.");
+                if (File.Exists(Path.Combine(ResponsesPath, requestId + ".json"))) return;
                 string toolName = request["name"]?.Value<string>() ?? string.Empty;
                 JObject arguments = request["arguments"] as JObject ?? new JObject();
                 if (string.IsNullOrWhiteSpace(toolName)) throw new InvalidOperationException("IPC request has no tool name.");
@@ -186,6 +205,8 @@ namespace WasimDevelopment.UnityMcpBridge
                     ["result"] = result,
                     ["completedUtc"] = DateTime.UtcNow.ToString("O")
                 };
+                if (result is JObject envelope && envelope["_mcpContent"] is JArray content)
+                { response["mcpContent"] = content; response["result"] = null; }
                 AtomicWrite(Path.Combine(ResponsesPath, requestId + ".json"), response.ToString(Formatting.None));
                 BridgeRequestHistory.Add("tools/call", toolName, true, "Completed through companion IPC");
             }
@@ -199,7 +220,8 @@ namespace WasimDevelopment.UnityMcpBridge
                     ["error"] = actual.Message,
                     ["completedUtc"] = DateTime.UtcNow.ToString("O")
                 };
-                AtomicWrite(Path.Combine(ResponsesPath, requestId + ".json"), response.ToString(Formatting.None));
+                try { AtomicWrite(Path.Combine(ResponsesPath, requestId + ".json"), response.ToString(Formatting.None)); }
+                catch (Exception writeError) { ReportIpcError(writeError); }
                 BridgeRequestHistory.Add("tools/call", string.Empty, false, actual.Message);
             }
             finally
@@ -218,9 +240,14 @@ namespace WasimDevelopment.UnityMcpBridge
             {
                 try
                 {
-                    string destination = Path.Combine(RequestsPath, Path.GetFileName(file));
-                    if (File.Exists(destination)) File.Delete(file);
-                    else File.Move(file, destination);
+                    string response = Path.Combine(ResponsesPath, Path.GetFileName(file));
+                    if (!File.Exists(response))
+                    {
+                        // A reload may have interrupted a side effect. Never replay an uncertain operation.
+                        AtomicWrite(response, new JObject { ["id"] = Path.GetFileNameWithoutExtension(file),
+                            ["success"] = false, ["error"] = "Unity reloaded during this request; inspect proposal/session state before retrying." }.ToString(Formatting.None));
+                    }
+                    File.Delete(file);
                 }
                 catch { }
             }
@@ -240,19 +267,6 @@ namespace WasimDevelopment.UnityMcpBridge
             Directory.CreateDirectory(ResponsesPath);
         }
 
-        private static void AtomicWrite(string path, string content)
-        {
-            string temp = path + ".tmp-" + Guid.NewGuid().ToString("N");
-            File.WriteAllText(temp, content ?? string.Empty, new UTF8Encoding(false));
-            try
-            {
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(temp, path);
-            }
-            finally
-            {
-                try { if (File.Exists(temp)) File.Delete(temp); } catch { }
-            }
-        }
+        private static void AtomicWrite(string path, string content) => AtomicFile.WriteText(path, content);
     }
 }

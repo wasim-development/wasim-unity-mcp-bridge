@@ -53,6 +53,7 @@ namespace WasimDevelopment.UnityMcpBridge
             DrawPermissions();
             EditorGUILayout.Space(10);
             DrawPendingChanges();
+            if (GUILayout.Button("Review change sets and Editor actions")) ChangeSetWindow.Open();
             EditorGUILayout.Space(10);
             DrawHistory();
             EditorGUILayout.EndScrollView();
@@ -163,7 +164,9 @@ namespace WasimDevelopment.UnityMcpBridge
             bool proposals = EditorGUILayout.Toggle("Allow script change proposals", BridgePreferences.EnableScriptChangeProposals);
             if (packageScripts != BridgePreferences.AllowPackageScripts) BridgePreferences.AllowPackageScripts = packageScripts;
             if (proposals != BridgePreferences.EnableScriptChangeProposals) BridgePreferences.EnableScriptChangeProposals = proposals;
-            EditorGUILayout.HelpBox("Analysis tools remain read-only. Script proposals never write until approved in this Unity window.", MessageType.None);
+            BridgePreferences.EnableChangeSets = EditorGUILayout.Toggle("Allow reviewed change sets", BridgePreferences.EnableChangeSets);
+            BridgePreferences.EnableEditorActions = EditorGUILayout.Toggle("Allow reviewed Editor actions", BridgePreferences.EnableEditorActions);
+            EditorGUILayout.HelpBox("Asset/scene changes and Editor actions require approval in Unity. Reading, tracing and profiler sampling do not modify project assets.", MessageType.None);
             EditorGUILayout.EndVertical();
         }
 

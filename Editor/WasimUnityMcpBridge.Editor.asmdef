@@ -1,8 +1,14 @@
 {
   "name": "WasimUnityMcpBridge.Editor",
   "rootNamespace": "WasimDevelopment.UnityMcpBridge",
-  "references": ["Unity.Newtonsoft.Json"],
-  "includePlatforms": ["Editor"],
+  "references": [
+    "Unity.Newtonsoft.Json",
+    "UnityEditor.TestRunner",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,

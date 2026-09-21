@@ -167,6 +167,8 @@ namespace WasimDevelopment.UnityMcpBridge
         public static bool Approve(string id, out string message)
         {
             message = string.Empty;
+            if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode || UnityEditor.EditorApplication.isCompiling)
+            { message = "Stop Play Mode and wait for compilation before applying a proposal."; return false; }
             ScriptChangeProposal proposal;
             lock (Gate)
             {
@@ -201,10 +203,7 @@ namespace WasimDevelopment.UnityMcpBridge
                 Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? backupFolder);
                 File.Copy(fullPath, backupPath, true);
 
-                string tempPath = fullPath + ".wasim-mcp.tmp";
-                File.WriteAllText(tempPath, proposal.ProposedContent, new UTF8Encoding(false));
-                File.Copy(tempPath, fullPath, true);
-                File.Delete(tempPath);
+                AtomicFile.WriteText(fullPath, proposal.ProposedContent);
 
                 lock (Gate)
                 {
@@ -394,7 +393,7 @@ namespace WasimDevelopment.UnityMcpBridge
         private static void Save()
         {
             Directory.CreateDirectory(DataRoot);
-            File.WriteAllText(PendingPath, JsonConvert.SerializeObject(_proposals, Formatting.Indented), new UTF8Encoding(false));
+            AtomicFile.WriteText(PendingPath, JsonConvert.SerializeObject(_proposals, Formatting.Indented));
         }
 
         private static void TrimHistory()

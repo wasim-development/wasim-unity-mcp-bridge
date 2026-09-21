@@ -6,7 +6,7 @@ namespace WasimDevelopment.UnityMcpBridge
     {
         public static JArray Build()
         {
-            return new JArray
+            var tools = new JArray
             {
                 ReadTool("unity_get_status", "Check whether the Unity Editor bridge is alive and report Editor, tunnel, selection and pending-change state.", ObjectSchema()),
                 ReadTool("unity_get_project_info", "Read the Unity project name, path, Editor version, platform and active scene.", ObjectSchema()),
@@ -99,6 +99,8 @@ namespace WasimDevelopment.UnityMcpBridge
                         Prop("summary", StringSchema("Brief explanation of the intended change."))),
                         "path", "expectedSha256", "newContent", "summary"))
             };
+            ExtendedToolCatalog.AppendCatalog(tools);
+            return tools;
         }
 
         private static JObject ReadTool(string name, string description, JObject inputSchema)

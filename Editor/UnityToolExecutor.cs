@@ -62,7 +62,7 @@ namespace WasimDevelopment.UnityMcpBridge
                         ReadString(arguments, "expectedSha256", string.Empty),
                         ReadString(arguments, "newContent", string.Empty),
                         ReadString(arguments, "summary", string.Empty));
-                default: throw new ArgumentException("Unknown Unity MCP tool: " + toolName);
+                default: return ExtendedTools.Execute(toolName, arguments);
             }
         }
 
@@ -80,6 +80,9 @@ namespace WasimDevelopment.UnityMcpBridge
                 ["advertisedTools"] = advertisedToolNames,
                 ["connected"] = CompanionManager.IsRunning && CompanionIpc.IsHeartbeatFresh(),
                 ["readOnly"] = true,
+                ["mutationPolicy"] = "Unity UI approval required for asset, scene and Play Mode actions",
+                ["lastHeartbeatError"] = CompanionIpc.LastHeartbeatError,
+                ["lastHeartbeatUtc"] = CompanionIpc.LastHeartbeatUtc.ToString("O"),
                 ["unityVersion"] = Application.unityVersion,
                 ["projectName"] = Application.productName,
                 ["activeScene"] = scene.IsValid() ? scene.name : string.Empty,
@@ -95,7 +98,11 @@ namespace WasimDevelopment.UnityMcpBridge
                 ["ngrokState"] = CompanionManager.Status.NgrokState,
                 ["publicUrlAvailable"] = !string.IsNullOrWhiteSpace(CompanionManager.Status.PublicUrl),
                 ["scriptChangeProposalsEnabled"] = BridgePreferences.EnableScriptChangeProposals,
+                ["changeSetsEnabled"] = BridgePreferences.EnableChangeSets,
+                ["editorActionsEnabled"] = BridgePreferences.EnableEditorActions,
                 ["pendingScriptChangeCount"] = ScriptChangeManager.PendingCount,
+                ["pendingChangeSetCount"] = ChangeSets.List(false).Count,
+                ["pendingEditorActionCount"] = EditorActions.List().OfType<JObject>().Count(a => (string)a["status"] == "Pending"),
                 ["lastRequestUtc"] = BridgeRequestHistory.LastRequestUtc?.ToString("O") ?? string.Empty,
                 ["serverUtc"] = DateTime.UtcNow.ToString("O")
             };
@@ -166,63 +173,37 @@ namespace WasimDevelopment.UnityMcpBridge
             };
         }
 
-        private static JObject SearchScripts(JObject args)
+        private static JObject SearchScripts(JObject args) => SearchSource(args, false);
+
+        private static JObject SearchSource(JObject args, bool references)
         {
-            string query = ReadString(args, "query", string.Empty).Trim();
-            if (query.Length == 0) throw new ArgumentException("Search query cannot be empty.");
-            int maximum = ReadInt(args, "maximumResults", 30, 1, 100);
-
-            var roots = new List<string> { Path.Combine(ProjectSecurity.ProjectRoot, "Assets") };
-            if (BridgePreferences.AllowPackageScripts) roots.Add(Path.Combine(ProjectSecurity.ProjectRoot, "Packages"));
-
+            string needle = ReadString(args, references ? "symbol" : "query", "").Trim();
+            if (needle.Length == 0) throw new ArgumentException("Search text is required.");
+            int maximum = ReadInt(args, "maximumResults", references ? 80 : 30, 1, references ? 200 : 100);
+            bool sensitive = references && ReadBool(args, "caseSensitive", true);
+            var comparison = sensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
             var matches = new JArray();
-            int scannedFiles = 0;
-            bool stopped = false;
-            foreach (string root in roots)
+            int scanned = 0;
+            foreach (string path in ProjectSecurity.ScriptAssetPaths())
             {
-                if (!Directory.Exists(root)) continue;
-                IEnumerable<string> files;
-                try { files = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories); }
-                catch { continue; }
-
-                foreach (string file in files)
+                if (!ProjectSecurity.TryResolveReadableScript(path, out string full, out _)) continue;
+                scanned++;
+                int lineNumber = 0;
+                foreach (string line in File.ReadLines(full))
                 {
-                    if (matches.Count >= maximum) { stopped = true; break; }
-                    scannedFiles++;
-                    try
-                    {
-                        FileInfo info = new FileInfo(file);
-                        if (info.Length > ProjectSecurity.MaxScriptBytes) continue;
-                        int lineNumber = 0;
-                        foreach (string line in File.ReadLines(file))
-                        {
-                            lineNumber++;
-                            if (line.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                            matches.Add(new JObject
-                            {
-                                ["path"] = ProjectSecurity.ToProjectRelative(file),
-                                ["line"] = lineNumber,
-                                ["text"] = Truncate(line.Trim(), 500)
-                            });
-                            if (matches.Count >= maximum) break;
-                        }
-                    }
-                    catch
-                    {
-                        // Skip unreadable or transient files.
-                    }
+                    lineNumber++;
+                    int column = line.IndexOf(needle, comparison);
+                    if (column < 0) continue;
+                    matches.Add(new JObject { ["path"] = path, ["line"] = lineNumber, ["column"] = column + 1,
+                        ["kind"] = "textual-match", ["text"] = Truncate(line.Trim(), 700) });
+                    if (matches.Count >= maximum) break;
                 }
-                if (stopped) break;
+                if (matches.Count >= maximum) break;
             }
-
-            return new JObject
-            {
-                ["query"] = query,
-                ["matches"] = matches,
-                ["scannedFiles"] = scannedFiles,
+            return new JObject { [references ? "symbol" : "query"] = needle, ["matches"] = matches,
+                ["caseSensitive"] = sensitive, ["scannedFiles"] = scanned,
                 ["resultLimitReached"] = matches.Count >= maximum,
-                ["packageScriptsEnabled"] = BridgePreferences.AllowPackageScripts
-            };
+                ["packageScriptsEnabled"] = BridgePreferences.AllowPackageScripts };
         }
 
         private static JObject ReadScript(JObject args)
@@ -632,72 +613,7 @@ namespace WasimDevelopment.UnityMcpBridge
         }
 
 
-        private static JObject FindScriptReferences(JObject args)
-        {
-            string symbol = ReadString(args, "symbol", string.Empty).Trim();
-            if (symbol.Length == 0) throw new ArgumentException("A symbol is required.");
-            bool caseSensitive = ReadBool(args, "caseSensitive", true);
-            int maximum = ReadInt(args, "maximumResults", 80, 1, 200);
-            StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-
-            var roots = new List<string> { Path.Combine(ProjectSecurity.ProjectRoot, "Assets") };
-            if (BridgePreferences.AllowPackageScripts) roots.Add(Path.Combine(ProjectSecurity.ProjectRoot, "Packages"));
-            var matches = new JArray();
-            int scannedFiles = 0;
-
-            foreach (string root in roots)
-            {
-                if (!Directory.Exists(root)) continue;
-                IEnumerable<string> files;
-                try { files = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories); }
-                catch { continue; }
-
-                foreach (string file in files)
-                {
-                    if (matches.Count >= maximum) break;
-                    try
-                    {
-                        FileInfo info = new FileInfo(file);
-                        if (info.Length > ProjectSecurity.MaxScriptBytes) continue;
-                        scannedFiles++;
-                        int lineNumber = 0;
-                        foreach (string line in File.ReadLines(file))
-                        {
-                            lineNumber++;
-                            int index = line.IndexOf(symbol, comparison);
-                            if (index < 0) continue;
-                            string trimmed = line.Trim();
-                            string kind = trimmed.IndexOf("class " + symbol, comparison) >= 0
-                                || trimmed.IndexOf("struct " + symbol, comparison) >= 0
-                                || trimmed.IndexOf("interface " + symbol, comparison) >= 0
-                                || trimmed.IndexOf("enum " + symbol, comparison) >= 0
-                                ? "declaration"
-                                : "reference";
-                            matches.Add(new JObject
-                            {
-                                ["path"] = ProjectSecurity.ToProjectRelative(file),
-                                ["line"] = lineNumber,
-                                ["column"] = index + 1,
-                                ["kind"] = kind,
-                                ["text"] = Truncate(trimmed, 700)
-                            });
-                            if (matches.Count >= maximum) break;
-                        }
-                    }
-                    catch { }
-                }
-                if (matches.Count >= maximum) break;
-            }
-
-            return new JObject
-            {
-                ["symbol"] = symbol,
-                ["caseSensitive"] = caseSensitive,
-                ["matches"] = matches,
-                ["scannedFiles"] = scannedFiles,
-                ["resultLimitReached"] = matches.Count >= maximum
-            };
-        }
+        private static JObject FindScriptReferences(JObject args) => SearchSource(args, true);
 
         private static JObject InspectSelectedHierarchy(JObject args)
         {

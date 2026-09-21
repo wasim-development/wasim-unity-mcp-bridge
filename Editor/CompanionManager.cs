@@ -146,7 +146,7 @@ namespace WasimDevelopment.UnityMcpBridge
             {
                 if (File.Exists(CompanionIpc.CompanionStatusPath))
                 {
-                    JObject json = JObject.Parse(File.ReadAllText(CompanionIpc.CompanionStatusPath));
+                    JObject json = AtomicFile.ReadObject(CompanionIpc.CompanionStatusPath);
                     next.State = json["state"]?.Value<string>() ?? "Stopped";
                     next.CompanionVersion = json["companionVersion"]?.Value<string>() ?? string.Empty;
                     next.ProcessId = json["processId"]?.Value<int>() ?? 0;

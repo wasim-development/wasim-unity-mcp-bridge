@@ -45,24 +45,24 @@ namespace WasimDevelopment.UnityMcpBridge
 
         private static void OnCompilationStarted(object context)
         {
-            CompanionIpc.WriteUnityStatus("compiling");
+            CompanionIpc.TryWriteHeartbeat("compiling");
         }
 
         private static void OnCompilationFinished(object context)
         {
-            CompanionIpc.WriteUnityStatus("compilation-finished");
+            CompanionIpc.TryWriteHeartbeat("compilation-finished");
         }
 
         private static void BeforeAssemblyReload()
         {
             // Deliberately do not stop the companion. It owns the MCP socket and ngrok
             // outside Unity's reloadable AppDomain and remains alive through this reload.
-            CompanionIpc.WriteUnityStatus("reloading");
+            CompanionIpc.TryWriteHeartbeat("reloading");
         }
 
         private static void OnQuitting()
         {
-            CompanionIpc.WriteUnityStatus("quitting");
+            CompanionIpc.TryWriteHeartbeat("quitting");
             if (BridgePreferences.StopCompanionWithUnity)
                 CompanionManager.Stop();
         }

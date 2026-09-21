@@ -50,7 +50,9 @@ namespace WasimDevelopment.UnityMcpBridge
                     if (success is bool ok && !ok) continue;
 
                     int mode = ReadInt(entryType, entry, "mode");
-                    string condition = ReadString(entryType, entry, "condition");
+                    string condition = ReadString(entryType, entry, "message");
+                    if (string.IsNullOrEmpty(condition)) condition = ReadString(entryType, entry, "condition");
+                    if (string.IsNullOrEmpty(condition)) continue;
                     string file = ReadString(entryType, entry, "file");
                     int line = ReadInt(entryType, entry, "line");
                     string type = ClassifyMode(mode);
@@ -106,9 +108,12 @@ namespace WasimDevelopment.UnityMcpBridge
 
         private static string ClassifyMode(int mode)
         {
-            // Internal mode flags vary, but error/assert/exception flags occupy the low error bits.
-            if ((mode & 1) != 0 || (mode & 2) != 0 || (mode & 16) != 0 || (mode & 256) != 0) return "Error";
-            if ((mode & 4) != 0 || (mode & 64) != 0) return "Warning";
+            // Unity 2022.3 LogMessageFlags, including compile/import errors and managed exceptions.
+            const int errors = (1 << 0) | (1 << 1) | (1 << 4) | (1 << 6) | (1 << 8)
+                             | (1 << 11) | (1 << 17) | (1 << 21);
+            const int warnings = (1 << 7) | (1 << 9) | (1 << 12);
+            if ((mode & errors) != 0) return "Error";
+            if ((mode & warnings) != 0) return "Warning";
             return "Log";
         }
 
