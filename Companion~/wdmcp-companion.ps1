@@ -17,7 +17,10 @@ $Script:NgrokState = 'Stopped'
 
 function Read-JsonFile([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
-    $raw = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+    $stream = [System.IO.FileStream]::new($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read,
+        ([System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete))
+    $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8, $true)
+    try { $raw = $reader.ReadToEnd() } finally { $reader.Dispose() }
     if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
     return $raw | ConvertFrom-Json
 }
@@ -27,12 +30,22 @@ function Write-TextAtomic([string]$Path, [string]$Text) {
     if (-not [string]::IsNullOrWhiteSpace($directory)) { [System.IO.Directory]::CreateDirectory($directory) | Out-Null }
     $temporary = $Path + '.tmp-' + [Guid]::NewGuid().ToString('N')
     [System.IO.File]::WriteAllText($temporary, $Text, $Utf8NoBom)
-    if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue }
-    Move-Item -LiteralPath $temporary -Destination $Path -Force
+    try {
+        for ($attempt = 0; ; $attempt++) {
+            try {
+                if ([System.IO.File]::Exists($Path)) { [System.IO.File]::Replace($temporary, $Path, $null) }
+                else { [System.IO.File]::Move($temporary, $Path) }
+                break
+            } catch [System.IO.IOException] {
+                if ($attempt -ge 3) { throw }
+                Start-Sleep -Milliseconds (5 * ($attempt + 1))
+            }
+        }
+    } finally { if ([System.IO.File]::Exists($temporary)) { [System.IO.File]::Delete($temporary) } }
 }
 
 function Write-JsonAtomic([string]$Path, $Value) {
-    Write-TextAtomic $Path ($Value | ConvertTo-Json -Depth 100 -Compress)
+    Write-TextAtomic $Path (ConvertTo-Json -InputObject $Value -Depth 100 -Compress)
 }
 
 function Add-Log([string]$Message) {
@@ -51,8 +64,15 @@ function Get-UnityAvailability {
     try {
         $status = Read-JsonFile ([string]$Config.unityStatusPath)
         if ($null -eq $status -or [string]::IsNullOrWhiteSpace([string]$status.timestampUtc)) { return $false }
-        $time = [DateTime]::Parse([string]$status.timestampUtc).ToUniversalTime()
-        return (([DateTime]::UtcNow - $time).TotalSeconds -le 5.0)
+        $stamp = $status.timestampUtc
+        if ($stamp -is [DateTime]) { $time = $stamp.ToUniversalTime() }
+        elseif ($stamp -is [DateTimeOffset]) { $time = $stamp.UtcDateTime }
+        else {
+            $time = [DateTime]::Parse([string]$stamp, [Globalization.CultureInfo]::InvariantCulture,
+                ([Globalization.DateTimeStyles]::AssumeUniversal -bor [Globalization.DateTimeStyles]::AdjustToUniversal))
+        }
+        $age = ([DateTime]::UtcNow - $time).TotalSeconds
+        return ($age -ge 0 -and $age -le 5.0)
     } catch { return $false }
 }
 
@@ -79,7 +99,8 @@ function Write-Status([string]$State) {
         startedUtc = $Script:StartedUtc
         timestampUtc = [DateTime]::UtcNow.ToString('O')
     }
-    Write-JsonAtomic ([string]$Config.companionStatusPath) $status
+    try { Write-JsonAtomic ([string]$Config.companionStatusPath) $status }
+    catch { $Script:LastError = 'Status write will retry: ' + $_.Exception.Message }
 }
 
 function Get-NgrokPublicUrl {
@@ -87,7 +108,13 @@ function Get-NgrokPublicUrl {
         $response = Invoke-RestMethod -Uri 'http://127.0.0.1:4040/api/tunnels' -Method Get -TimeoutSec 2
         foreach ($tunnel in @($response.tunnels)) {
             $url = [string]$tunnel.public_url
-            if ($url.StartsWith('https://', [StringComparison]::OrdinalIgnoreCase)) { return $url.TrimEnd('/') }
+            $address = [string]$tunnel.config.addr
+            if ($address -notmatch '^[a-z]+://') { $address = 'http://' + $address }
+            $target = $null
+            if ([Uri]::TryCreate($address, [UriKind]::Absolute, [ref]$target) -and $target.IsLoopback -and
+                $target.Scheme -eq 'http' -and $target.Port -eq [int]$Config.port -and $url.StartsWith('https://', [StringComparison]::OrdinalIgnoreCase)) {
+                return $url.TrimEnd('/')
+            }
         }
     } catch { }
     return ''
@@ -186,7 +213,8 @@ function Read-HttpRequest([System.Net.Sockets.TcpClient]$Client) {
     }
     $contentLength = 0
     if ($headers.ContainsKey('content-length')) { $contentLength = [int]$headers['content-length'] }
-    if ($contentLength -gt 1048576) { throw 'HTTP body exceeded 1 MB.' }
+    if ($contentLength -lt 0 -or $contentLength -gt 1048576) { throw 'Invalid HTTP body size (limit 1 MB).' }
+    if ($headers.ContainsKey('transfer-encoding')) { throw 'Transfer-Encoding is not supported; use Content-Length.' }
     $bodyOffset = $headerEnd + 4
     $bodyMemory = [System.IO.MemoryStream]::new()
     if ($all.Length -gt $bodyOffset) { $bodyMemory.Write($all, $bodyOffset, $all.Length - $bodyOffset) }
@@ -235,18 +263,24 @@ function Invoke-UnityTool([string]$Name, $Arguments) {
         name = $Name
         arguments = $(if ($null -eq $Arguments) { [ordered]@{} } else { $Arguments })
         createdUtc = [DateTime]::UtcNow.ToString('O')
+        expiresUtc = [DateTime]::UtcNow.AddSeconds([int]$Config.requestTimeoutSeconds).ToString('O')
     }
     Write-JsonAtomic $requestPath $request
 
     $deadline = [DateTime]::UtcNow.AddSeconds([int]$Config.requestTimeoutSeconds)
+    $nextStatus = [DateTime]::UtcNow
     while ([DateTime]::UtcNow -lt $deadline) {
+        if ([DateTime]::UtcNow -ge $nextStatus) { Write-Status 'Running'; $nextStatus = [DateTime]::UtcNow.AddSeconds(1) }
         if (Test-Path -LiteralPath $responsePath) {
             try {
                 $response = Read-JsonFile $responsePath
                 Remove-Item -LiteralPath $responsePath -Force -ErrorAction SilentlyContinue
                 if ([bool]$response.success) {
-                    $text = $response.result | ConvertTo-Json -Depth 100
-                    return [ordered]@{ content=@([ordered]@{type='text';text=$text}); isError=$false }
+                    if ($null -ne $response.mcpContent) {
+                        return [ordered]@{content=@($response.mcpContent);isError=$false}
+                    }
+                    $text = ConvertTo-Json -InputObject $response.result -Depth 100 -Compress
+                    return [ordered]@{ content=@([ordered]@{type='text';text=[string]$text}); isError=$false }
                 }
                 return New-ToolError ('Unity tool failed: ' + [string]$response.error)
             } catch {
@@ -259,6 +293,7 @@ function Invoke-UnityTool([string]$Name, $Arguments) {
             Start-Sleep -Milliseconds 75
         }
     }
+    Remove-Item -LiteralPath $requestPath -Force -ErrorAction SilentlyContinue
     return New-ToolError ('Unity tool timed out after ' + [string]$Config.requestTimeoutSeconds + ' seconds. Unity may still be compiling or processing a large folder.')
 }
 
@@ -275,7 +310,7 @@ function Handle-Rpc($Rpc) {
             $selected = if (@('2025-11-25','2025-06-18','2025-03-26') -contains $requested) { $requested } else { '2025-11-25' }
             return New-RpcSuccess $id ([ordered]@{
                 protocolVersion=$selected
-                capabilities=[ordered]@{tools=[ordered]@{listChanged=$true}}
+                capabilities=[ordered]@{tools=[ordered]@{listChanged=$false}}
                 serverInfo=[ordered]@{name='wasim-unity-mcp-bridge';title='Wasim Unity MCP Bridge';version=[string]$Config.companionVersion}
                 instructions='The standalone companion keeps MCP and ngrok alive across Unity script reloads. Unity project tools are executed through a local queue. During compilation a tool may report Unity temporarily unavailable; retry it without recreating the app.'
             })
@@ -293,6 +328,8 @@ function Handle-Rpc($Rpc) {
             if ($notification) { return $null }
             $name = [string]$Rpc.params.name
             if ([string]::IsNullOrWhiteSpace($name)) { return New-RpcError $id -32602 'Invalid params' 'tools/call requires a tool name.' }
+            $catalog = @(Read-JsonFile ([string]$Config.catalogPath))
+            if ($name -notin @($catalog | ForEach-Object { $_.name })) { return New-RpcError $id -32602 'Unknown tool' $name }
             $result = Invoke-UnityTool $name $Rpc.params.arguments
             return New-RpcSuccess $id $result
         }
@@ -363,7 +400,7 @@ try {
             if ($null -eq $rpcResponse) {
                 Write-HttpResponse $request.Stream 202 'Accepted' ''
             } else {
-                Write-HttpResponse $request.Stream 200 'OK' ($rpcResponse | ConvertTo-Json -Depth 100 -Compress)
+                Write-HttpResponse $request.Stream 200 'OK' (ConvertTo-Json -InputObject $rpcResponse -Depth 100 -Compress)
             }
         } catch {
             $Script:LastError = $_.Exception.Message
