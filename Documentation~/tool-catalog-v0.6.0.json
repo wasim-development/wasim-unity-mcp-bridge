@@ -1,0 +1,1262 @@
+[
+  {
+    "name": "unity_get_status",
+    "title": "Unity get status",
+    "description": "Check whether the Unity Editor bridge is alive and report Editor, tunnel, selection and pending-change state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_project_info",
+    "title": "Unity get project info",
+    "description": "Read the Unity project name, path, Editor version, platform and active scene.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_compilation_status",
+    "title": "Unity get compilation status",
+    "description": "Read current and most recent Unity script compilation status and messages.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_read_console",
+    "title": "Unity read console",
+    "description": "Read bounded entries from the current Unity Console. Internal Console reflection falls back to logs captured while the bridge is loaded.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maximumEntries": {
+          "type": "integer",
+          "description": "Maximum entries to return, from 1 to 200.",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 200
+        },
+        "includeLogs": {
+          "type": "boolean",
+          "description": "Include normal logs.",
+          "default": false
+        },
+        "includeWarnings": {
+          "type": "boolean",
+          "description": "Include warnings.",
+          "default": true
+        },
+        "includeErrors": {
+          "type": "boolean",
+          "description": "Include errors and exceptions.",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_read_editor_log",
+    "title": "Unity read editor log",
+    "description": "Read the tail of Unity's Editor log, bounded to the final 2 MB.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "tailLines": {
+          "type": "integer",
+          "description": "Maximum trailing lines, from 10 to 1000.",
+          "default": 200,
+          "minimum": 10,
+          "maximum": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_search_scripts",
+    "title": "Unity search scripts",
+    "description": "Search C# source under Assets and, when enabled in Unity, Packages. Results are bounded.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Case-insensitive text to find."
+        },
+        "maximumResults": {
+          "type": "integer",
+          "description": "Maximum matches, from 1 to 100.",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_find_script_references",
+    "title": "Unity find script references",
+    "description": "Find bounded textual references to a class, method, field or other symbol in C# scripts, with optional case-sensitive matching.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Symbol or text to find."
+        },
+        "caseSensitive": {
+          "type": "boolean",
+          "description": "Use case-sensitive matching.",
+          "default": true
+        },
+        "maximumResults": {
+          "type": "integer",
+          "description": "Maximum matches, from 1 to 200.",
+          "default": 80,
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "symbol"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_read_script",
+    "title": "Unity read script",
+    "description": "Read a bounded C# script using a project-relative Assets/ or permitted Packages/ path. The response includes a SHA-256 hash for safe change proposals.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Project-relative script path, for example Assets/Scripts/Player.cs."
+        },
+        "startLine": {
+          "type": "integer",
+          "description": "First line, one-based.",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "endLine": {
+          "type": "integer",
+          "description": "Last line, one-based. Omit or use 0 for up to 400 lines.",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_selected_script",
+    "title": "Unity get selected script",
+    "description": "Read the C# script currently selected in the Unity Project window.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_active_scene",
+    "title": "Unity get active scene",
+    "description": "Read active-scene metadata and a bounded hierarchy snapshot.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maximumObjects": {
+          "type": "integer",
+          "description": "Maximum hierarchy objects, from 1 to 1000.",
+          "default": 300,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumDepth": {
+          "type": "integer",
+          "description": "Maximum hierarchy depth, from 0 to 20.",
+          "default": 8,
+          "minimum": 0,
+          "maximum": 20
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_inspect_selected_object",
+    "title": "Unity inspect selected object",
+    "description": "Inspect the selected GameObject, its components, prefab information and bounded serialized properties.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maximumPropertiesPerComponent": {
+          "type": "integer",
+          "description": "Maximum serialized properties per component, from 1 to 200.",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_inspect_selected_hierarchy",
+    "title": "Unity inspect selected hierarchy",
+    "description": "Recursively inspect the selected GameObject and its children, including components, missing scripts and missing object references.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maximumObjects": {
+          "type": "integer",
+          "description": "Maximum GameObjects to return, from 1 to 1000.",
+          "default": 300,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumDepth": {
+          "type": "integer",
+          "description": "Maximum child depth, from 0 to 20.",
+          "default": 10,
+          "minimum": 0,
+          "maximum": 20
+        },
+        "maximumPropertiesPerComponent": {
+          "type": "integer",
+          "description": "Maximum serialized properties per component, from 1 to 200.",
+          "default": 40,
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_inspect_selected_prefab",
+    "title": "Unity inspect selected prefab",
+    "description": "Recursively inspect the selected prefab asset or nearest selected prefab instance root, including child hierarchy, components, missing scripts, missing object references and bounded overrides.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maximumObjects": {
+          "type": "integer",
+          "description": "Maximum prefab GameObjects to return, from 1 to 1000.",
+          "default": 300,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumDepth": {
+          "type": "integer",
+          "description": "Maximum child depth, from 0 to 20.",
+          "default": 10,
+          "minimum": 0,
+          "maximum": 20
+        },
+        "maximumPropertiesPerComponent": {
+          "type": "integer",
+          "description": "Maximum serialized properties per component, from 1 to 200.",
+          "default": 40,
+          "minimum": 1,
+          "maximum": 200
+        },
+        "maximumOverrides": {
+          "type": "integer",
+          "description": "Maximum prefab property overrides to return, from 0 to 500.",
+          "default": 100,
+          "minimum": 0,
+          "maximum": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_selected_asset_info",
+    "title": "Unity get selected asset info",
+    "description": "Inspect the selected Project asset, including path, type, GUID, labels and bounded direct or recursive dependencies.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recursiveDependencies": {
+          "type": "boolean",
+          "description": "Include recursive dependencies instead of only direct dependencies.",
+          "default": false
+        },
+        "maximumDependencies": {
+          "type": "integer",
+          "description": "Maximum dependencies, from 1 to 500.",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_analyze_selected_folder",
+    "title": "Unity analyze selected folder",
+    "description": "Analyze the folder currently selected in the Unity Project window. Returns a bounded asset inventory plus script declarations, prefab missing-script/reference findings, Animator Controller summaries, compiler messages in the folder, and dependencies outside the folder.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "includeSubfolders": {
+          "type": "boolean",
+          "description": "Include assets in nested folders.",
+          "default": true
+        },
+        "analyzeScripts": {
+          "type": "boolean",
+          "description": "Summarize C# scripts, namespaces, declarations, sizes and hashes.",
+          "default": true
+        },
+        "analyzePrefabs": {
+          "type": "boolean",
+          "description": "Inspect bounded prefab hierarchies for components, missing scripts and missing object references.",
+          "default": true
+        },
+        "analyzeAnimatorControllers": {
+          "type": "boolean",
+          "description": "Summarize Animator Controller parameters, layers, states, transitions, motions and clips.",
+          "default": true
+        },
+        "includeExternalDependencies": {
+          "type": "boolean",
+          "description": "Report direct dependencies that are outside the selected folder.",
+          "default": true
+        },
+        "maximumAssets": {
+          "type": "integer",
+          "description": "Maximum assets to inventory and analyze, from 1 to 2000.",
+          "default": 200,
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "maximumDetailedItemsPerType": {
+          "type": "integer",
+          "description": "Maximum scripts, prefabs and Animator Controllers to analyze in detail per type, from 1 to 200.",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 200
+        },
+        "maximumIssues": {
+          "type": "integer",
+          "description": "Maximum issue records to return, from 1 to 1000.",
+          "default": 150,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumDependencies": {
+          "type": "integer",
+          "description": "Maximum external dependencies to return, from 0 to 1000.",
+          "default": 100,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_inspect_animator_controller",
+    "title": "Unity inspect animator controller",
+    "description": "Inspect the selected Animator component, Animator Controller asset, or Animator Override Controller asset. Returns controller parameters, layers, nested state machines, states, Any State and Entry transitions, state transitions and conditions, blend trees, motions, animation clips, behaviours, and override mappings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "searchChildren": {
+          "type": "boolean",
+          "description": "Search children when the selected GameObject has no Animator.",
+          "default": true
+        },
+        "maximumStates": {
+          "type": "integer",
+          "description": "Maximum states across all layers, from 1 to 1000.",
+          "default": 250,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumTransitions": {
+          "type": "integer",
+          "description": "Maximum transitions across all state machines, from 1 to 2000.",
+          "default": 600,
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "maximumMotions": {
+          "type": "integer",
+          "description": "Maximum motion and blend-tree nodes, from 1 to 2000.",
+          "default": 500,
+          "minimum": 1,
+          "maximum": 2000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_animator_info",
+    "title": "Unity get animator info",
+    "description": "Compatibility alias for unity_inspect_animator_controller. Inspect the selected Animator Controller graph, including parameters, layers, states, transitions, conditions, blend trees, motions and animation clips.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "searchChildren": {
+          "type": "boolean",
+          "description": "Search children when the selected GameObject has no Animator.",
+          "default": true
+        },
+        "maximumStates": {
+          "type": "integer",
+          "description": "Maximum states across all layers, from 1 to 1000.",
+          "default": 250,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maximumTransitions": {
+          "type": "integer",
+          "description": "Maximum transitions across all state machines, from 1 to 2000.",
+          "default": 600,
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "maximumMotions": {
+          "type": "integer",
+          "description": "Maximum motion and blend-tree nodes, from 1 to 2000.",
+          "default": 500,
+          "minimum": 1,
+          "maximum": 2000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_packages",
+    "title": "Unity get packages",
+    "description": "Read Packages/manifest.json and report its direct package dependencies.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_script_change_proposals",
+    "title": "Unity get script change proposals",
+    "description": "List pending or recent script replacement proposals. Proposals do not modify Assets until approved in Unity.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "includeCompleted": {
+          "type": "boolean",
+          "description": "Include applied, rejected, failed and superseded proposals.",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_propose_script_text_patch",
+    "title": "Unity propose script text patch",
+    "description": "Submit one exact oldText-to-newText patch for an existing Assets/**/*.cs file. The old text must occur exactly once. This creates a pending proposal only; Unity does not modify the script until the user reviews and approves it in the bridge window. Provide the SHA-256 returned by unity_read_script to prevent stale edits.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Existing project-relative Assets/**/*.cs path."
+        },
+        "expectedSha256": {
+          "type": "string",
+          "description": "Current script SHA-256 from unity_read_script."
+        },
+        "oldText": {
+          "type": "string",
+          "description": "Exact existing code block to replace. It must occur exactly once in the current script."
+        },
+        "newText": {
+          "type": "string",
+          "description": "Replacement code block. May be empty only when intentionally removing the matched block."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief explanation of the intended change."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expectedSha256",
+        "oldText",
+        "newText",
+        "summary"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_propose_script_replacement",
+    "title": "Unity propose script replacement",
+    "description": "Submit a complete replacement for one existing Assets/**/*.cs file. This never edits the script immediately: it creates a pending proposal that must be reviewed and approved in the Unity bridge window. Provide the SHA-256 returned by unity_read_script to prevent stale edits.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Existing project-relative Assets/**/*.cs path."
+        },
+        "expectedSha256": {
+          "type": "string",
+          "description": "Current script SHA-256 from unity_read_script."
+        },
+        "newContent": {
+          "type": "string",
+          "description": "Complete proposed C# file content, not a partial patch."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief explanation of the intended change."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expectedSha256",
+        "newContent",
+        "summary"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_inspect_runtime",
+    "title": "Unity inspect runtime",
+    "description": "Read bounded live Unity/ClientSim state, stable object IDs and nested serialized fields. Includes Rigidbody, Joint, Collider, Animator and optional VRChat pickup/owner/Udon variables. Does not inspect an external VRChat client.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "maximumObjects": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 200
+        },
+        "maximumProperties": {
+          "type": "integer",
+          "default": 80,
+          "minimum": 1,
+          "maximum": 300
+        },
+        "includeSerialized": {
+          "type": "boolean",
+          "default": true
+        },
+        "udonVariables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_capture_view",
+    "title": "Unity capture view",
+    "description": "Return an MCP image of the Scene camera render or focused Game View. Scene capture excludes editor gizmos. Requires interactive Unity.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "view": {
+          "type": "string",
+          "enum": [
+            "scene",
+            "game"
+          ]
+        },
+        "width": {
+          "type": "integer",
+          "default": 960,
+          "minimum": 64,
+          "maximum": 1280
+        },
+        "height": {
+          "type": "integer",
+          "default": 540,
+          "minimum": 64,
+          "maximum": 1280
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_propose_change_set",
+    "title": "Unity propose change set",
+    "description": "Create a pending set of 1-50 operations. User must enable change sets and approve inside Unity. Saved clean scenes, stable GlobalObjectIds and existing destination folders are required. Operations: set_property, add_component, create_gameobject, create_script, replace_script, save_prefab. New aliases use $name. Existing scripts require expectedSha256. No immediate project mutation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "set_property",
+                  "add_component",
+                  "create_gameobject",
+                  "create_script",
+                  "replace_script",
+                  "save_prefab"
+                ]
+              },
+              "targetId": {
+                "type": "string"
+              },
+              "alias": {
+                "type": "string"
+              },
+              "propertyPath": {
+                "type": "string"
+              },
+              "value": {},
+              "expectedValue": {},
+              "componentType": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "primitive": {
+                "type": "string",
+                "enum": [
+                  "Cube",
+                  "Sphere",
+                  "Capsule",
+                  "Cylinder",
+                  "Plane",
+                  "Quad"
+                ]
+              },
+              "parentId": {
+                "type": "string"
+              },
+              "scenePath": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "expectedSha256": {
+                "type": "string"
+              },
+              "newContent": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "kind"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "operations"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_change_sets",
+    "title": "Unity get change sets",
+    "description": "List pending/recent change sets and rollback state. includeOperations includes full review content.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "includeCompleted": {
+          "type": "boolean",
+          "default": false
+        },
+        "includeOperations": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_propose_change_set_rollback",
+    "title": "Unity propose change set rollback",
+    "description": "Prepare a reviewed rollback of an applied change set. Blocks if assets changed after apply; approval remains in Unity.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "changeSetId": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "changeSetId"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_start_trace",
+    "title": "Unity start trace",
+    "description": "Record bounded Play Mode state changes and explicit [WDMCP_EVENT] logs without blocking a request. Sampled changes are not proof that an exact callback fired. One trace retained; read before a domain reload.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 120
+        },
+        "intervalMilliseconds": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 50,
+          "maximum": 2000
+        },
+        "maximumObjects": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20
+        },
+        "udonVariables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_read_trace",
+    "title": "Unity read trace",
+    "description": "Read trace events incrementally. firstAvailableSequence reveals dropped entries in the 2000-event ring buffer.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "afterSequence": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "maximumEntries": {
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sessionId"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_stop_trace",
+    "title": "Unity stop trace",
+    "description": "Stop the named trace and return its first page of events.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sessionId"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_validate_vrchat",
+    "title": "Unity validate vrchat",
+    "description": "Inspect selected hierarchy for missing references, pickup/physics/Animator configuration and used-layer collisions. Includes compilation status. Does not replace SDK Network ID allocation or multiplayer/build testing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "maximumObjects": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_find_asset_references",
+    "title": "Unity find asset references",
+    "description": "Page through direct reverse asset dependencies in Assets, plus direct dependencies of the target asset. Save scenes before searching.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "startIndex": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "maximumAssets": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_check_runtime",
+    "title": "Unity check runtime",
+    "description": "Evaluate exact assertions against exposed current component runtime values. Requires Play Mode. Does not invoke gameplay callbacks or simulate other players.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "udonVariables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "objectId": {
+                "type": "string"
+              },
+              "property": {
+                "type": "string"
+              },
+              "equals": {}
+            },
+            "additionalProperties": false,
+            "required": [
+              "objectId",
+              "property",
+              "equals"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "checks"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_start_profiler",
+    "title": "Unity start profiler",
+    "description": "Start 1-30 seconds of nonblocking sampled Editor CPU/memory/render counters. Returns a session ID; not on-device FPS or per-script profiling.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "durationSeconds": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 30
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_read_profiler",
+    "title": "Unity read profiler",
+    "description": "Read profiler session statistics and unavailable counters. Sessions reset on domain reload.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sessionId"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_stop_profiler",
+    "title": "Unity stop profiler",
+    "description": "Stop the named profiler capture, release recorders and return statistics.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sessionId"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_propose_editor_action",
+    "title": "Unity propose editor action",
+    "description": "Request a locally reviewed Editor action: enter/exit Play Mode, pause/resume/step, compile, or run Unity Test Framework tests. These actions can run project code; user approval is required in Unity.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "enterPlayMode",
+            "exitPlayMode",
+            "pause",
+            "resume",
+            "step",
+            "compile",
+            "runTests"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "testMode": {
+          "type": "string",
+          "enum": [
+            "EditMode",
+            "PlayMode"
+          ]
+        },
+        "testNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "summary"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_editor_actions",
+    "title": "Unity get editor actions",
+    "description": "List recent pending/completed Editor actions for local review.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "unity_get_test_results",
+    "title": "Unity get test results",
+    "description": "Read the latest bridge-started Unity Test Framework run and bounded failure details. Results persist across domain reloads.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+]

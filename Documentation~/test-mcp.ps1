@@ -10,7 +10,7 @@ $headers = @{
 
 function Invoke-Mcp([string]$Body) {
     try {
-        $response = Invoke-WebRequest -Uri $Endpoint -Method Post -ContentType "application/json" -Headers $headers -Body $Body
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $Endpoint -Method Post -ContentType "application/json" -Headers $headers -Body $Body
         Write-Host ("HTTP " + [int]$response.StatusCode)
         if ([string]::IsNullOrWhiteSpace($response.Content)) {
             return $null

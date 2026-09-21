@@ -1,0 +1,208 @@
+{
+  "repository": "wasim-development/wasim-unity-mcp-bridge",
+  "baseVersion": "0.5.1",
+  "baseCommit": "9061958a372df692daf056ba03b5aff283b6d99d",
+  "upgradedVersion": "0.6.0",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "gitBlobSha1": "0afacfd072b8c2651cb9bc12ba7c08b24dc952c5"
+    },
+    {
+      "path": "CHANGELOG.md.meta",
+      "gitBlobSha1": "473e197da54938f1aeba27248f8191ccd3ae114c"
+    },
+    {
+      "path": "Companion~/start-companion.bat",
+      "gitBlobSha1": "8978d45ff64ee0abcfe81a07bd2f9acb4e2411f3"
+    },
+    {
+      "path": "Companion~/stop-companion.ps1",
+      "gitBlobSha1": "7037e4a56da2e8534ee6c68e59c95b4ddbf58ba7"
+    },
+    {
+      "path": "Companion~/wdmcp-companion.ps1",
+      "gitBlobSha1": "ac24f2ca7aac6fd76f5622407a083569dfb25fb4"
+    },
+    {
+      "path": "Documentation~/SETUP.md",
+      "gitBlobSha1": "1b75ee287545cb4bd6f1dc5e66ac2b139548d35e"
+    },
+    {
+      "path": "Documentation~/test-mcp.ps1",
+      "gitBlobSha1": "e451c3dad51ed9b84eb3e66b47e7a49796737932"
+    },
+    {
+      "path": "Editor.meta",
+      "gitBlobSha1": "a2bea722ddba6e0f634c5443014ec41bc1a84036"
+    },
+    {
+      "path": "Editor/BridgeBootstrap.cs",
+      "gitBlobSha1": "0b5cc6c674b40b3db957c601f74612d150f442ca"
+    },
+    {
+      "path": "Editor/BridgeBootstrap.cs.meta",
+      "gitBlobSha1": "22bb7330e41f20e9c39d7e44a0b57eb35b43b9a2"
+    },
+    {
+      "path": "Editor/BridgePreferences.cs",
+      "gitBlobSha1": "e6d92eee1a903d148c81d1631e74b037c979e5d7"
+    },
+    {
+      "path": "Editor/BridgePreferences.cs.meta",
+      "gitBlobSha1": "783b9f39b8ef51272eed452806081ee0ea0a2b2a"
+    },
+    {
+      "path": "Editor/BridgeRequestHistory.cs",
+      "gitBlobSha1": "4821660a64731d4570af08be16b49db3fe978add"
+    },
+    {
+      "path": "Editor/BridgeRequestHistory.cs.meta",
+      "gitBlobSha1": "2a75d2de185eb7145e86d7def33e0ecdfda50fe0"
+    },
+    {
+      "path": "Editor/BridgeSelfTest.cs",
+      "gitBlobSha1": "e76646fcbfaa2e0eb8f20b710753e9c70f71baa2"
+    },
+    {
+      "path": "Editor/BridgeSelfTest.cs.meta",
+      "gitBlobSha1": "44278a0afdafca96ba7a391d33ea6657173903e1"
+    },
+    {
+      "path": "Editor/BridgeVersion.cs",
+      "gitBlobSha1": "602900d45d001e79207887eeceae9d16152b84b4"
+    },
+    {
+      "path": "Editor/BridgeVersion.cs.meta",
+      "gitBlobSha1": "7c28703af4eff16658eac9bd22ede1d8af9a904c"
+    },
+    {
+      "path": "Editor/BridgeWindow.cs",
+      "gitBlobSha1": "5064cb5c2b75ec79540e200596dcf3bfd034fdf7"
+    },
+    {
+      "path": "Editor/BridgeWindow.cs.meta",
+      "gitBlobSha1": "e287b9b708d0f08e9f050fffebe2d8d2839dba33"
+    },
+    {
+      "path": "Editor/CompanionIpc.cs",
+      "gitBlobSha1": "dc7176bbc8a92e77b42e63964a208ffd26eb05a2"
+    },
+    {
+      "path": "Editor/CompanionIpc.cs.meta",
+      "gitBlobSha1": "4d2b975e1e00b853bdd0b9da7f1ef051e45a6995"
+    },
+    {
+      "path": "Editor/CompanionManager.cs",
+      "gitBlobSha1": "a64ab521f93e7261871fd3d8635ea41caa4a3fb9"
+    },
+    {
+      "path": "Editor/CompanionManager.cs.meta",
+      "gitBlobSha1": "2610e8939cf0332dd06e729cdc2bf2ce737f49c0"
+    },
+    {
+      "path": "Editor/CompilationMonitor.cs",
+      "gitBlobSha1": "18d8e2fcf9fc99f3ced193f20ddb31b3c0f90ae3"
+    },
+    {
+      "path": "Editor/CompilationMonitor.cs.meta",
+      "gitBlobSha1": "6cb6b6eeb4ccc7885c2564e04709c1cf315b92e8"
+    },
+    {
+      "path": "Editor/ConsoleLogCollector.cs",
+      "gitBlobSha1": "3917de2518698400cf2f4f97bc8be97964b1cd0d"
+    },
+    {
+      "path": "Editor/ConsoleLogCollector.cs.meta",
+      "gitBlobSha1": "abbbdc4e6ed7ce0047e37c989f784faefdfa4f6d"
+    },
+    {
+      "path": "Editor/FolderAnalysisService.cs",
+      "gitBlobSha1": "bdc203b92830b8ee0682899fad9e9501e999e306"
+    },
+    {
+      "path": "Editor/FolderAnalysisService.cs.meta",
+      "gitBlobSha1": "6bfd6fb6a3a771d4ee6c51a0b8b96f79f4e8853f"
+    },
+    {
+      "path": "Editor/MainThreadDispatcher.cs",
+      "gitBlobSha1": "ea080359095c626f94fec6201360a74949071399"
+    },
+    {
+      "path": "Editor/MainThreadDispatcher.cs.meta",
+      "gitBlobSha1": "ff8b0a101edef9ccc13e2fc335ad7da58c077fcf"
+    },
+    {
+      "path": "Editor/McpToolCatalog.cs",
+      "gitBlobSha1": "88675ee8bbde1c979f3b199145c43e9bd4cb74a1"
+    },
+    {
+      "path": "Editor/McpToolCatalog.cs.meta",
+      "gitBlobSha1": "d1cf34a1c66f04166ac77ad66a40e734bd64b531"
+    },
+    {
+      "path": "Editor/ProjectSecurity.cs",
+      "gitBlobSha1": "7a638865bda0285d31d437508fcd9793169d2eaf"
+    },
+    {
+      "path": "Editor/ProjectSecurity.cs.meta",
+      "gitBlobSha1": "95d5b4128811014b4990fef32c37362b4966880b"
+    },
+    {
+      "path": "Editor/ScriptChangeManager.cs",
+      "gitBlobSha1": "afc7ccf624e7ae3c268c28f319c726231a427803"
+    },
+    {
+      "path": "Editor/ScriptChangeManager.cs.meta",
+      "gitBlobSha1": "7b6c7b2f4ae6ad682165467bac7364f6c1667242"
+    },
+    {
+      "path": "Editor/UnityConsoleReader.cs",
+      "gitBlobSha1": "3efdc2478b93e86d315906c755ff440ef137f5dc"
+    },
+    {
+      "path": "Editor/UnityConsoleReader.cs.meta",
+      "gitBlobSha1": "ecf0f29656418ed93b0b97c09a7d6ebdeb9e380f"
+    },
+    {
+      "path": "Editor/UnityToolExecutor.cs",
+      "gitBlobSha1": "6ff4c62df8d9cfece7150f7c48a7b8aaa8449da4"
+    },
+    {
+      "path": "Editor/UnityToolExecutor.cs.meta",
+      "gitBlobSha1": "35bd7337a0c977ebb67b8df16b6ae30adfd859aa"
+    },
+    {
+      "path": "Editor/WasimUnityMcpBridge.Editor.asmdef",
+      "gitBlobSha1": "76fd71331474731cb041646fa85beab89cf46711"
+    },
+    {
+      "path": "Editor/WasimUnityMcpBridge.Editor.asmdef.meta",
+      "gitBlobSha1": "7d28160e65edec30a6622d5ee9f61133b2315da2"
+    },
+    {
+      "path": "LICENSE.md",
+      "gitBlobSha1": "d9eb958327283d03cef35c4f1213f3b626563212"
+    },
+    {
+      "path": "LICENSE.md.meta",
+      "gitBlobSha1": "304915f45e1475e79ca36d9c243b59bcde25abfb"
+    },
+    {
+      "path": "README.md",
+      "gitBlobSha1": "86b60fe0a99ca4c2539a0b331c0c7c5b0b89b380"
+    },
+    {
+      "path": "README.md.meta",
+      "gitBlobSha1": "29f10d206e4318b1b589152193016fa103a8dd33"
+    },
+    {
+      "path": "package.json",
+      "gitBlobSha1": "dd1b695128e9a33f74bf48029ad1ad040c246703"
+    },
+    {
+      "path": "package.json.meta",
+      "gitBlobSha1": "f8da9ee1bf978c3ea3c738ec26bd51e5fb6d8ab6"
+    }
+  ]
+}
